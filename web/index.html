@@ -3,13 +3,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Bố cục: một cột hẹp kiểu công cụ hiện trường; form ở trên, radar + danh sách CGI ở dưới */
+/* Bố cục: gọn cho điện thoại (một cột, các ô nằm sát nhau); PC rộng thì hai cột nhập | kết quả */
 :root{
   --bg:#f3f5f7; --panel:#ffffff; --fg:#243141; --muted:#5b6878; --line:#cdd4da; --btn:#e6e9ec;
   --accent:#1d6a86; --accent-fg:#ffffff; --ok:#1d7a4c; --warn:#a86108; --err:#b3261e;
   --vt:#c3122f; --vn:#0b6fc0; --mb:#6a3fb8; --vnm:#d07a00; --gm:#2e8b57; --it:#7a7f87;
   --f-ui:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --h:34px;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#10151b; --panel:#18202a; --fg:#dfe6ee; --muted:#93a1b1; --line:#2d3947; --btn:#243040;
@@ -20,164 +21,156 @@
   --accent:#5cb6d6; --accent-fg:#0b1a22; --ok:#5ccf93; --warn:#f0b05a; --err:#ff8a80;
   --vt:#ff5c74; --vn:#5aa9ff; --mb:#b18cff; --vnm:#ffb347; --gm:#6fd49c; --it:#a7adb5; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--f-ui)}
-.wrap{max-width:760px;margin:0 auto;padding-block:18px 40px;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  display:flex;flex-direction:column;gap:14px}
-header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px}
-h1{margin:0;font-size:1.45rem;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
-.sub{margin:2px 0 0;color:var(--muted);font-size:.9rem}
-.pill{font-size:.78rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);white-space:nowrap}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font:14px/1.4 var(--f-ui);-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto;padding-block:10px 20px;
+  padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:8px}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+h1{margin:0;font-size:1.05rem;font-weight:700;white-space:nowrap}
+.pill{font-size:.7rem;padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
 .pill.on{color:var(--ok);border-color:var(--ok)}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px}
-.lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.field{display:flex;flex-direction:column;gap:5px;min-width:0}
-input[type=text],input[type=password],select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:9px 10px;min-width:0}
-input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-#coord{flex:1 1 240px;font-family:var(--f-mono);font-size:.95rem}
-button{font:inherit;font-weight:500;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:7px;padding:8px 12px;cursor:pointer}
-button:hover{filter:brightness(.97)}
+.layout{display:flex;flex-direction:column;gap:8px}
+.side,.main{display:flex;flex-direction:column;gap:8px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.lbl{font-size:.64rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.line{display:flex;gap:6px;align-items:center;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+input[type=text],input[type=password],select{font:inherit;font-size:.88rem;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;height:var(--h);padding:0 8px;min-width:0;width:100%}
+select{padding-right:4px}
+#coord{flex:1;width:auto;font-family:var(--f-mono);font-size:.86rem}
+#coord.bad{border-color:var(--err);box-shadow:inset 0 0 0 1px var(--err)}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{font:inherit;font-size:.85rem;font-weight:500;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:6px;height:var(--h);padding:0 10px;cursor:pointer;white-space:nowrap}
+button.sm{flex:none;height:calc(var(--h) - 2px);padding:0 10px;font-size:.82rem}
 button:disabled{opacity:.5;cursor:default}
-.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600;padding:11px 16px;font-size:1rem}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;font-size:.88rem}
-.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--c,var(--muted))}
-.chip .mnc{font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
-.chip[aria-pressed="true"]{border-color:var(--c,var(--accent));box-shadow:inset 0 0 0 1px var(--c,var(--accent));background:var(--panel);font-weight:600}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-/* Bố cục: điện thoại một cột; PC hai cột (trái nhập liệu cố định, phải kết quả) */
-.layout{display:flex;flex-direction:column;gap:14px}
-.side,.main{display:flex;flex-direction:column;gap:12px;min-width:0}
-.findbar .primary{width:100%}
-.res-body{display:flex;flex-direction:column;gap:12px;min-width:0}
-@media (min-width:980px){
-  .wrap{max-width:1240px}
-  .layout{display:grid;grid-template-columns:minmax(340px,410px) minmax(0,1fr);align-items:start;gap:18px}
-  .side{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;padding-right:2px}
-  .res-body{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);align-items:start;gap:14px}
-  #radar{position:sticky;top:12px}
-  .list{max-height:calc(100vh - 140px);overflow:auto;padding-right:4px}
-}
-@media (max-width:600px){
-  body{font-size:14px}
-  .wrap{padding-block:12px 96px;gap:10px}
-  h1{font-size:1.2rem}
-  .sub{font-size:.82rem}
-  .panel{padding:12px;gap:10px;border-radius:9px}
-  .chip{padding:6px 10px;font-size:.84rem}
-  .findbar{position:fixed;left:0;right:0;bottom:0;z-index:5;
-    padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
-    background:var(--panel);border-top:1px solid var(--line)}
-  #radar{max-width:300px;max-height:300px}
-  .res-head .row button{padding:6px 9px;font-size:.82rem}
-  .cell{padding:9px 10px;gap:3px 10px}
-  .cgi{font-size:.95rem}
-}
-.src{display:flex;flex-direction:column;gap:8px}
-.hint{font-size:.83rem;color:var(--muted);margin:0}
-.msg{font-size:.88rem;margin:0}
+.primary{width:100%;height:calc(var(--h) + 6px);background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600;font-size:.95rem}
+.trio{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:6px}
+.fld{display:flex;flex-direction:column;gap:2px;min-width:0}
+.seg{display:flex;flex:1;min-width:0;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--btn)}
+.seg .chip{flex:1;min-width:0;border:0;border-radius:0;height:30px;padding:0 4px;font-size:.82rem;background:transparent;color:var(--fg)}
+.seg .chip+.chip{border-left:1px solid var(--line)}
+.seg .chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.seg-src{flex:0 1 150px}
+.chk{display:flex;align-items:center;gap:4px;font-size:.8rem;color:var(--muted);flex:none}
+.src-act{display:flex;gap:6px;flex:none;margin-left:auto}
+.hint{font-size:.8rem;color:var(--muted);margin:0}
+.msg{font-size:.8rem;margin:0}
+.msg:empty{display:none}
 .msg.err{color:var(--err)} .msg.ok{color:var(--ok)}
-progress{width:100%;height:6px;accent-color:var(--accent)}
-.res-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
-.res-head h2{margin:0;font-size:1.05rem}
-#radar{width:100%;aspect-ratio:1/1;max-width:100%;max-height:420px;display:block;margin:0 auto;border-radius:8px;background:var(--bg);border:1px solid var(--line)}
-.list{display:flex;flex-direction:column;gap:8px}
-.cell{border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center;background:var(--panel);cursor:pointer}
+progress{width:100%;height:5px;accent-color:var(--accent)}
+.src{display:flex;flex-direction:column;gap:6px}
+.apis{display:flex;flex-direction:column;gap:4px}
+.api{display:grid;grid-template-columns:auto 1fr auto;gap:0 8px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:5px 7px;background:var(--bg);font-size:.82rem}
+.api.off{opacity:.55}
+.api .nm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.api .tk{grid-column:2;font-family:var(--f-mono);font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.api .st{grid-column:2/4;font-size:.72rem;color:var(--muted)}
+.api .st.ok{color:var(--ok)} .api .st.err{color:var(--err)}
+.api .act{display:flex;gap:3px;grid-row:1/3;grid-column:3}
+.api .act button{height:26px;padding:0 7px;font-size:.74rem}
+.api .ord{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);grid-row:1/3}
+.addbox summary{font-size:.82rem;color:var(--accent);cursor:pointer;font-weight:600;list-style:none;padding:2px 0}
+.addbox summary::-webkit-details-marker{display:none}
+.addapi{display:grid;grid-template-columns:1fr 1.4fr;gap:6px;margin-top:6px}
+.res-head{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0}
+.res-head h2{margin:0;font-size:.95rem;white-space:nowrap}
+.res-head .row{flex-wrap:nowrap;gap:4px}
+.res-body{display:flex;flex-direction:column;gap:8px;min-width:0}
+#radar{width:min(260px,70vw);aspect-ratio:1/1;max-width:100%;display:block;margin:0 auto;border-radius:8px;background:var(--bg);border:1px solid var(--line)}
+.list{display:flex;flex-direction:column;gap:6px;min-width:0}
+.cell{border:1px solid var(--line);border-left:4px solid var(--c);border-radius:7px;padding:7px 9px;display:grid;grid-template-columns:auto 1fr auto;gap:2px 8px;align-items:center;background:var(--panel);cursor:pointer;min-width:0}
 .cell.sel{box-shadow:0 0 0 2px var(--c)}
-.cell .no{font-family:var(--f-mono);color:var(--muted);font-size:.8rem;grid-row:span 2}
-.cgi{font-family:var(--f-mono);font-weight:700;font-size:1.02rem;word-break:break-all;min-width:0}
-.meta{grid-column:2/4;font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px;font-variant-numeric:tabular-nums}
+.cell .no{font-family:var(--f-mono);color:var(--muted);font-size:.74rem;grid-row:span 2}
+.cell .cp{height:26px;padding:0 8px;font-size:.74rem}
+.cgi{font-family:var(--f-mono);font-weight:700;font-size:.92rem;word-break:break-all;min-width:0}
+.meta{grid-column:2/4;font-size:.74rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 10px;font-variant-numeric:tabular-nums}
 .meta b{color:var(--fg);font-weight:600}
-.tag{font-size:.7rem;font-weight:700;letter-spacing:.04em;padding:1px 6px;border-radius:4px;border:1px solid currentColor}
+.tag{font-size:.66rem;font-weight:700;letter-spacing:.04em;padding:0 5px;border-radius:4px;border:1px solid currentColor}
 .tag.in{color:var(--ok)}
 .cell a{color:var(--accent)}
-.empty{text-align:center;color:var(--muted);padding:22px 10px;font-size:.92rem}
-.empty ol{text-align:left;display:inline-block;margin:8px 0 0;padding-left:20px}
-details summary{cursor:pointer;color:var(--muted);font-size:.88rem}
-footer{font-size:.8rem;color:var(--muted)}
-.apis{display:flex;flex-direction:column;gap:6px}
-.api{display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg)}
-.api.off{opacity:.55}
-.api .nm{font-weight:600;min-width:0;word-break:break-all}
-.api .tk{grid-column:2;font-family:var(--f-mono);font-size:.78rem;color:var(--muted);word-break:break-all}
-.api .st{grid-column:2/4;font-size:.8rem;color:var(--muted)}
-.api .st.ok{color:var(--ok)} .api .st.err{color:var(--err)}
-.api .act{display:flex;gap:4px;grid-row:1/3;grid-column:3}
-.api .act button{padding:5px 9px;font-size:.82rem}
-.api .ord{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);grid-row:1/3}
-.addapi{display:grid;grid-template-columns:1fr 1.4fr 1.2fr auto;gap:8px;align-items:end}
-@media (max-width:620px){.addapi{grid-template-columns:1fr}}
+.empty{text-align:center;color:var(--muted);padding:14px 8px;font-size:.85rem}
+footer{font-size:.7rem;color:var(--muted);text-align:center}
+/* Điện thoại rất nhỏ */
+@media (max-width:360px){
+  body{font-size:13px} :root{--h:32px}
+  .trio{grid-template-columns:1fr 1fr} .fld-net{grid-column:1/3}
+  .seg .chip{font-size:.78rem}
+  .res-head .row button{padding:0 7px}
+}
+/* Màn ngang thấp: thu nhỏ sơ đồ */
+@media (max-height:500px) and (orientation:landscape){ #radar{width:min(180px,40vh)} }
+/* Máy tính bảng / điện thoại lớn nằm ngang */
+@media (min-width:640px){
+  body{font-size:15px}
+  .res-body{display:grid;grid-template-columns:minmax(200px,260px) minmax(0,1fr);align-items:start}
+  #radar{width:100%}
+}
+/* PC: hai cột */
+@media (min-width:960px){
+  .wrap{max-width:1240px;padding-block:16px 24px;gap:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  h1{font-size:1.3rem}
+  .layout{display:grid;grid-template-columns:minmax(330px,390px) minmax(0,1fr);align-items:start;gap:16px}
+  .side{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+  .panel{padding:14px;gap:10px}
+  .res-body{grid-template-columns:minmax(260px,320px) minmax(0,1fr);gap:14px}
+  #radar{position:sticky;top:12px}
+  .list{max-height:calc(100vh - 130px);overflow:auto;padding-right:4px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
 <div class="wrap">
   <header>
-    <div>
-      <h1>Tra CGI ngược</h1>
-      <p class="sub">Vĩ độ, kinh độ → danh sách cell (CGI) của nhà mạng quanh vị trí</p>
-    </div>
+    <h1>Tra CGI ngược</h1>
     <span class="pill" id="dataPill">Chưa nạp dữ liệu</span>
   </header>
 
   <div class="layout">
   <div class="side">
-  <section class="panel" aria-labelledby="l-pos">
-    <span class="lbl" id="l-pos">Vị trí</span>
-    <div class="row">
-      <input type="text" id="coord" value="10.957300, 106.842700" placeholder="10.9573, 106.8427 hoặc link Google Maps" autocomplete="off">
-      <button id="btnGps" type="button">Lấy GPS</button>
+  <section class="panel" aria-label="Điều kiện tra">
+    <div class="line">
+      <input type="text" id="coord" value="10.957300, 106.842700" placeholder="Vĩ độ, kinh độ" autocomplete="off" aria-label="Vĩ độ, kinh độ">
+      <button id="btnGps" type="button" class="sm">GPS</button>
     </div>
-    <p class="hint" id="coordInfo">Dán tọa độ thập phân, độ-phút-giây (10°57'26"N 106°50'33"E) hoặc link Google Maps.</p>
-    <div class="grid2">
-      <div class="field"><label class="lbl" for="radius">Bán kính tìm</label>
-        <select id="radius"><option value="300">300 m</option><option value="500">500 m</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="3000">3 km</option><option value="5000">5 km</option></select></div>
-      <div class="field"><label class="lbl" for="maxN">Số cell tối đa</label>
-        <select id="maxN"><option>10</option><option selected>30</option><option>50</option><option>100</option></select></div>
+    <div class="trio">
+      <label class="fld fld-net"><span class="lbl">Nhà mạng</span><select id="netSel"></select></label>
+      <label class="fld"><span class="lbl">Bán kính</span>
+        <select id="radius"><option value="300">300 m</option><option value="500">500 m</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="3000">3 km</option><option value="5000">5 km</option></select></label>
+      <label class="fld"><span class="lbl">Tối đa</span>
+        <select id="maxN"><option>10</option><option selected>30</option><option>50</option><option>100</option></select></label>
     </div>
-  </section>
-
-  <section class="panel" aria-labelledby="l-net">
-    <span class="lbl" id="l-net">Nhà mạng</span>
-    <div class="chips" id="netChips"></div>
-    <span class="lbl">Công nghệ</span>
-    <div class="chips" id="radioChips"></div>
-    <label class="row hint" style="gap:6px"><input type="checkbox" id="hex"> Hiển thị LAC/CI dạng HEX</label>
-  </section>
-
-  <section class="panel" aria-labelledby="l-src">
-    <span class="lbl" id="l-src">Nguồn dữ liệu</span>
-    <div class="chips" id="srcChips">
-      <button type="button" class="chip" data-src="off" aria-pressed="true">Offline (file 452.csv.gz)</button>
-      <button type="button" class="chip" data-src="api" aria-pressed="false">API OpenCelliD</button>
+    <div class="line">
+      <div class="seg" id="radioChips" role="group" aria-label="Công nghệ"></div>
+      <label class="chk"><input type="checkbox" id="hex"> HEX</label>
     </div>
-    <div class="src" id="srcOff">
-      <div class="row">
+    <div class="line">
+      <div class="seg seg-src" id="srcChips" role="group" aria-label="Nguồn dữ liệu">
+        <button type="button" class="chip" data-src="off" aria-pressed="true">Offline</button>
+        <button type="button" class="chip" data-src="api" aria-pressed="false">API</button>
+      </div>
+      <div class="src-act" id="srcOff">
         <input type="file" id="file" accept=".gz,.csv,text/csv,application/gzip" hidden>
-        <button type="button" id="btnFile">Nạp file CSV / CSV.GZ</button>
-        <button type="button" id="btnClear">Xóa dữ liệu đã lưu</button>
+        <button type="button" id="btnFile" class="sm">Nạp file</button>
+        <button type="button" id="btnClear" class="sm">Xóa</button>
       </div>
-      <progress id="prog" max="1" value="0" hidden></progress>
-      <p class="hint">Tải file <b>452.csv.gz</b> (Việt Nam) từ trang Downloads của OpenCelliD. File được lưu trong máy, lần sau mở là có ngay; nạp file mới để cập nhật.</p>
     </div>
+    <progress id="prog" max="1" value="0" hidden></progress>
     <div class="src" id="srcApi" hidden>
-      <span class="lbl">Danh sách API · thử lần lượt từ trên xuống</span>
       <div class="apis" id="apiList"></div>
-      <div class="addapi">
-        <div class="field"><label class="lbl" for="apiName">Tên</label>
-          <input type="text" id="apiName" placeholder="Token 1" autocomplete="off"></div>
-        <div class="field"><label class="lbl" for="token">Token OpenCelliD</label>
-          <input type="password" id="token" placeholder="pk.xxxxxxxx" autocomplete="off"></div>
-        <div class="field"><label class="lbl" for="apiHost">Máy chủ</label>
-          <input type="text" id="apiHost" value="https://opencellid.org" autocomplete="off"></div>
-        <button type="button" id="btnAddApi">Thêm API</button>
-      </div>
-      <p class="hint">Khi tra, app dùng API đầu tiên đang bật; nếu API đó lỗi (sai token, hết lượt, mất mạng) hoặc không ra cell nào thì tự chuyển sang API kế tiếp. Mỗi API chỉ cho hỏi một ô ≤ 4 km², nên vùng lớn được chia nhỏ (tối đa 25 lượt mỗi API).</p>
+      <details class="addbox"><summary>+ Thêm API</summary>
+        <div class="addapi">
+          <input type="text" id="apiName" placeholder="Tên" autocomplete="off" aria-label="Tên API">
+          <input type="password" id="token" placeholder="Token pk.xxx" autocomplete="off" aria-label="Token OpenCelliD">
+          <input type="text" id="apiHost" value="https://opencellid.org" autocomplete="off" aria-label="Máy chủ API">
+          <button type="button" id="btnAddApi" class="sm">Thêm</button>
+        </div>
+      </details>
     </div>
+    <button class="primary" id="btnFind" type="button">Tìm CGI</button>
+    <p class="msg" id="msg" role="status"></p>
   </section>
-
-  <div class="findbar"><button class="primary" id="btnFind" type="button">Tìm CGI</button></div>
-  <p class="msg" id="msg" role="status"></p>
   </div>
 
   <div class="main">
@@ -185,24 +178,19 @@ footer{font-size:.8rem;color:var(--muted)}
     <div class="res-head">
       <h2 id="l-res">Kết quả</h2>
       <div class="row">
-        <button type="button" id="btnCopyAll" disabled>Sao chép CGI</button>
-        <button type="button" id="btnCsv" disabled>Xuất CSV</button>
-        <button type="button" id="btnKml" disabled>Xuất KML</button>
+        <button type="button" id="btnCopyAll" class="sm" disabled>Chép CGI</button>
+        <button type="button" id="btnCsv" class="sm" disabled>CSV</button>
+        <button type="button" id="btnKml" class="sm" disabled>KML</button>
       </div>
     </div>
     <div class="res-body">
     <canvas id="radar" width="600" height="600" aria-label="Sơ đồ vị trí cell quanh điểm tra"></canvas>
     <div class="list" id="list">
-      <div class="empty">Chưa có kết quả.
-        <ol><li>Nạp file 452.csv.gz (hoặc nhập token API)</li><li>Nhập tọa độ, chọn nhà mạng</li><li>Bấm <b>Tìm CGI</b></li></ol></div>
+      <div class="empty">Chưa có kết quả.</div>
     </div>
     </div>
   </section>
 
-  <details>
-    <summary>Cách đọc kết quả</summary>
-    <p class="hint">CGI = MCC-MNC-LAC-CI (4G: TAC thay LAC, CI là ECI = eNB×256 + sector; 3G: CI = RNC×65536 + CID). Tọa độ cell trong OpenCelliD là tâm ước lượng từ các mẫu đo, không phải vị trí trạm BTS thật. Cell gần nhất chưa chắc là cell phục vụ; nhãn <b>TRONG VÙNG</b> nghĩa là điểm tra nằm trong bán kính phủ ước lượng của cell đó. Nên lấy vài cell đầu danh sách rồi tra xuôi lại để đối chiếu.</p>
-  </details>
   <footer>Dữ liệu cell: OpenCelliD (CC BY-SA 4.0).</footer>
   </div>
   </div>
@@ -236,8 +224,11 @@ function mkChips(box,items,key,onPick){
   });
 }
 const savedNet=ls.get("tracgi.net");if(savedNet!==null&&NETMAP[+savedNet])state.net=+savedNet;
-mkChips($("netChips"),NETS.map(n=>({...n,label:n.name,sub:n.mnc?"452-"+String(n.mnc).padStart(2,"0"):""})),"mnc",it=>{state.net=it.mnc;ls.set("tracgi.net",it.mnc)});
-mkChips($("radioChips"),RADIOS.map(r=>({...r,label:r.t,sub:r.s||"",k:r.k})),"k",it=>{state.radio=it.k});
+{const ns=$("netSel");
+  NETS.forEach(n=>{const o=document.createElement("option");o.value=n.mnc;o.textContent=n.mnc?n.name+" ("+String(n.mnc).padStart(2,"0")+")":"Tất cả";ns.appendChild(o)});
+  ns.value=String(state.net);
+  ns.onchange=()=>{state.net=+ns.value;ls.set("tracgi.net",state.net)};}
+mkChips($("radioChips"),RADIOS.map(r=>({...r,label:r.t,sub:"",k:r.k})),"k",it=>{state.radio=it.k});
 [...$("radioChips").children].forEach((c,i)=>c.setAttribute("aria-pressed",String(RADIOS[i].k===state.radio)));
 
 $("srcChips").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
@@ -256,7 +247,7 @@ const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"
 function mask(t){return t.length>10?t.slice(0,5)+"…"+t.slice(-4):t}
 function renderApis(){
   const box=$("apiList");box.innerHTML="";
-  if(!APIS.length){box.innerHTML='<p class="hint">Chưa có API nào. Nhập tên và token rồi bấm <b>Thêm API</b>.</p>';return}
+  if(!APIS.length){box.innerHTML='<p class="hint">Chưa có API.</p>';return}
   APIS.forEach((a,i)=>{
     const d=document.createElement("div");d.className="api"+(a.on?"":" off");
     d.innerHTML='<span class="ord">'+String(i+1).padStart(2,"0")+'</span><span class="nm">'+esc(a.name)+'</span>'+
@@ -264,7 +255,7 @@ function renderApis(){
       (i?'<button type="button" data-a="up" aria-label="Đưa lên trên">Lên</button>':'')+
       '<button type="button" data-a="del">Xóa</button></div>'+
       '<span class="tk">'+esc(mask(a.token))+(a.host&&a.host!=="https://opencellid.org"?" · "+esc(a.host):"")+'</span>'+
-      (a.last?'<span class="st '+(a.lastCls||"")+'">Lần tra gần nhất: '+esc(a.last)+'</span>':'');
+      (a.last?'<span class="st '+(a.lastCls||"")+'">'+esc(a.last)+'</span>':'');
     d.querySelectorAll("button").forEach(b=>b.onclick=()=>{
       const act=b.dataset.a;
       if(act==="on")a.on=!a.on;
@@ -306,7 +297,7 @@ function parseCoord(s){
   return null;
   function chk(a,b){return(Math.abs(a)<=90&&Math.abs(b)<=180&&isFinite(a)&&isFinite(b))?[a,b]:null}
 }
-$("coord").addEventListener("input",()=>{const c=parseCoord($("coord").value);$("coordInfo").textContent=c?("Đọc được: vĩ độ "+c[0].toFixed(6)+", kinh độ "+c[1].toFixed(6)):"Chưa đọc được tọa độ. Ví dụ: 10.9573, 106.8427";});
+$("coord").addEventListener("input",()=>{const v=$("coord").value.trim();$("coord").classList.toggle("bad",!!v&&!parseCoord(v));});
 $("btnGps").onclick=()=>{
   if(!navigator.geolocation){say("Thiết bị không hỗ trợ GPS.","err");return}
   say("Đang lấy vị trí GPS…");
@@ -530,7 +521,8 @@ function copy(t,btn){
 $("btnCopyAll").onclick=e=>copy(state.results.map(cgi).join("\n"),e.target);
 
 function drawRadar(){
-  const cv=$("radar"),dpr=window.devicePixelRatio||1,w=cv.clientWidth||600;
+  const cv=$("radar");cv.hidden=!state.results.length;if(cv.hidden)return;
+  const dpr=window.devicePixelRatio||1,w=cv.clientWidth||600;
   cv.width=w*dpr;cv.height=w*dpr;const g=cv.getContext("2d");g.scale(dpr,dpr);
   const cs=getComputedStyle(document.documentElement),fg=cs.getPropertyValue("--fg").trim(),mu=cs.getPropertyValue("--muted").trim(),ln=cs.getPropertyValue("--line").trim(),ac=cs.getPropertyValue("--accent").trim();
   const cx=w/2,cy=w/2,rad=w/2-26;g.clearRect(0,0,w,w);
@@ -538,7 +530,7 @@ function drawRadar(){
   for(let k=1;k<=3;k++){g.beginPath();g.arc(cx,cy,rad*k/3,0,7);g.strokeStyle=ln;g.lineWidth=1;g.stroke();g.fillStyle=mu;g.fillText(fmtD(state.R*k/3),cx,cy-rad*k/3-3)}
   g.beginPath();g.moveTo(cx,cy-rad);g.lineTo(cx,cy+rad);g.moveTo(cx-rad,cy);g.lineTo(cx+rad,cy);g.strokeStyle=ln;g.setLineDash([3,4]);g.stroke();g.setLineDash([]);
   g.fillStyle=fg;g.font="600 12px "+cs.getPropertyValue("--f-ui");g.fillText("B",cx,14);
-  if(!state.center){g.fillStyle=mu;g.font="13px "+cs.getPropertyValue("--f-ui");g.fillText("Sơ đồ cell quanh điểm tra sẽ hiện ở đây",cx,cy+rad/3+20);}
+
   const sc=rad/state.R;
   state.results.forEach((o,i)=>{
     if(!state.center)return;
