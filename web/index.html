@@ -61,7 +61,14 @@ button:disabled{opacity:.5;cursor:default}
 .msg.err{color:var(--err)} .msg.ok{color:var(--ok)}
 progress{width:100%;height:5px;accent-color:var(--accent)}
 .src{display:flex;flex-direction:column;gap:6px}
-.apis{display:flex;flex-direction:column;gap:4px}
+.apis{display:flex;flex-direction:column;gap:4px;max-height:min(46vh,340px);overflow:auto}
+.apibar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;border:1px solid var(--line);border-radius:7px;padding:4px 4px 4px 9px;background:var(--bg)}
+.apisum{font-size:.82rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.apisum b{font-weight:600}
+.apisum .bad{color:var(--err);font-weight:600}
+.apisum .off{color:var(--muted)}
+#btnApiToggle .arr{display:inline-block;margin-left:2px}
+#btnApiToggle[aria-expanded="true"] .arr{transform:rotate(180deg)}
 .api{display:grid;grid-template-columns:auto 1fr auto;gap:0 8px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:5px 7px;background:var(--bg);font-size:.82rem}
 .api.off{opacity:.55}
 .api .nm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -158,7 +165,11 @@ footer{font-size:.7rem;color:var(--muted);text-align:center}
     </div>
     <progress id="prog" max="1" value="0" hidden></progress>
     <div class="src" id="srcApi" hidden>
-      <div class="apis" id="apiList"></div>
+      <div class="apibar">
+        <span class="apisum" id="apiSum">Chưa có API</span>
+        <button type="button" id="btnApiToggle" class="sm" aria-expanded="false" aria-controls="apiList" disabled>Xem API <span class="arr" aria-hidden="true">▾</span></button>
+      </div>
+      <div class="apis" id="apiList" hidden></div>
       <details class="addbox"><summary>+ Thêm API</summary>
         <div class="addapi">
           <input type="text" id="apiName" placeholder="Tên" autocomplete="off" aria-label="Tên API">
@@ -245,9 +256,21 @@ if(!APIS.length&&oldTok)APIS=[{name:"Token 1",token:oldTok,host:"https://opencel
 function saveApis(){ls.set("tracgi.apis",JSON.stringify(APIS.map(a=>({name:a.name,token:a.token,host:a.host,on:a.on,last:a.last,lastCls:a.lastCls}))))}
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
 function mask(t){return t.length>10?t.slice(0,5)+"…"+t.slice(-4):t}
+let apiOpen=false;
+function renderApiSum(){
+  const n=APIS.length,on=APIS.filter(a=>a.on).length,err=APIS.filter(a=>a.on&&a.lastCls==="err").length;
+  const sum=$("apiSum"),tg=$("btnApiToggle");
+  if(!n){sum.textContent="Chưa có API";apiOpen=false}
+  else sum.innerHTML='<b>'+n+' API</b> · '+on+' đang bật'+(n-on?' · <span class="off">'+(n-on)+' tắt</span>':'')+(err?' · <span class="bad">'+err+' lỗi</span>':'');
+  tg.disabled=!n;
+  tg.setAttribute("aria-expanded",String(apiOpen));
+  tg.firstChild.nodeValue=apiOpen?"Ẩn API ":"Xem API ";
+  $("apiList").hidden=!apiOpen;
+}
 function renderApis(){
   const box=$("apiList");box.innerHTML="";
-  if(!APIS.length){box.innerHTML='<p class="hint">Chưa có API.</p>';return}
+  renderApiSum();
+  if(!APIS.length)return;
   APIS.forEach((a,i)=>{
     const d=document.createElement("div");d.className="api"+(a.on?"":" off");
     d.innerHTML='<span class="ord">'+String(i+1).padStart(2,"0")+'</span><span class="nm">'+esc(a.name)+'</span>'+
@@ -274,8 +297,9 @@ $("btnAddApi").onclick=()=>{
   if(!/^https?:\/\//i.test(host))host="https://"+host;
   APIS.push({name:$("apiName").value.trim()||("Token "+(APIS.length+1)),token:tok,host,on:true});
   saveApis();renderApis();$("token").value="";$("apiName").value="";
-  say("Đã thêm API. Hiện có "+APIS.length+" API.","ok");
+  say("Đã thêm API. Tổng cộng "+APIS.length+" API.","ok");
 };
+$("btnApiToggle").onclick=()=>{apiOpen=!apiOpen;renderApiSum()};
 renderApis();
 $("hex").addEventListener("change",render);
 
