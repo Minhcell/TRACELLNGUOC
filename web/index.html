@@ -1,0 +1,579 @@
+<title>Tra CGI Ngược</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Bố cục: một cột hẹp kiểu công cụ hiện trường; form ở trên, radar + danh sách CGI ở dưới */
+:root{
+  --bg:#f3f5f7; --panel:#ffffff; --fg:#243141; --muted:#5b6878; --line:#cdd4da; --btn:#e6e9ec;
+  --accent:#1d6a86; --accent-fg:#ffffff; --ok:#1d7a4c; --warn:#a86108; --err:#b3261e;
+  --vt:#c3122f; --vn:#0b6fc0; --mb:#6a3fb8; --vnm:#d07a00; --gm:#2e8b57; --it:#7a7f87;
+  --f-ui:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10151b; --panel:#18202a; --fg:#dfe6ee; --muted:#93a1b1; --line:#2d3947; --btn:#243040;
+  --accent:#5cb6d6; --accent-fg:#0b1a22; --ok:#5ccf93; --warn:#f0b05a; --err:#ff8a80;
+  --vt:#ff5c74; --vn:#5aa9ff; --mb:#b18cff; --vnm:#ffb347; --gm:#6fd49c; --it:#a7adb5; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10151b; --panel:#18202a; --fg:#dfe6ee; --muted:#93a1b1; --line:#2d3947; --btn:#243040;
+  --accent:#5cb6d6; --accent-fg:#0b1a22; --ok:#5ccf93; --warn:#f0b05a; --err:#ff8a80;
+  --vt:#ff5c74; --vn:#5aa9ff; --mb:#b18cff; --vnm:#ffb347; --gm:#6fd49c; --it:#a7adb5; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--f-ui)}
+.wrap{max-width:760px;margin:0 auto;padding-block:18px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:14px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px}
+h1{margin:0;font-size:1.45rem;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.sub{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+.pill{font-size:.78rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);white-space:nowrap}
+.pill.on{color:var(--ok);border-color:var(--ok)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+input[type=text],input[type=password],select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:9px 10px;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#coord{flex:1 1 240px;font-family:var(--f-mono);font-size:.95rem}
+button{font:inherit;font-weight:500;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:7px;padding:8px 12px;cursor:pointer}
+button:hover{filter:brightness(.97)}
+button:disabled{opacity:.5;cursor:default}
+.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600;padding:11px 16px;font-size:1rem}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;font-size:.88rem}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--c,var(--muted))}
+.chip .mnc{font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--c,var(--accent));box-shadow:inset 0 0 0 1px var(--c,var(--accent));background:var(--panel);font-weight:600}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* Bố cục: điện thoại một cột; PC hai cột (trái nhập liệu cố định, phải kết quả) */
+.layout{display:flex;flex-direction:column;gap:14px}
+.side,.main{display:flex;flex-direction:column;gap:12px;min-width:0}
+.findbar .primary{width:100%}
+.res-body{display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (min-width:980px){
+  .wrap{max-width:1240px}
+  .layout{display:grid;grid-template-columns:minmax(340px,410px) minmax(0,1fr);align-items:start;gap:18px}
+  .side{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;padding-right:2px}
+  .res-body{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);align-items:start;gap:14px}
+  #radar{position:sticky;top:12px}
+  .list{max-height:calc(100vh - 140px);overflow:auto;padding-right:4px}
+}
+@media (max-width:600px){
+  body{font-size:14px}
+  .wrap{padding-block:12px 96px;gap:10px}
+  h1{font-size:1.2rem}
+  .sub{font-size:.82rem}
+  .panel{padding:12px;gap:10px;border-radius:9px}
+  .chip{padding:6px 10px;font-size:.84rem}
+  .findbar{position:fixed;left:0;right:0;bottom:0;z-index:5;
+    padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+    background:var(--panel);border-top:1px solid var(--line)}
+  #radar{max-width:300px;max-height:300px}
+  .res-head .row button{padding:6px 9px;font-size:.82rem}
+  .cell{padding:9px 10px;gap:3px 10px}
+  .cgi{font-size:.95rem}
+}
+.src{display:flex;flex-direction:column;gap:8px}
+.hint{font-size:.83rem;color:var(--muted);margin:0}
+.msg{font-size:.88rem;margin:0}
+.msg.err{color:var(--err)} .msg.ok{color:var(--ok)}
+progress{width:100%;height:6px;accent-color:var(--accent)}
+.res-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.res-head h2{margin:0;font-size:1.05rem}
+#radar{width:100%;aspect-ratio:1/1;max-width:100%;max-height:420px;display:block;margin:0 auto;border-radius:8px;background:var(--bg);border:1px solid var(--line)}
+.list{display:flex;flex-direction:column;gap:8px}
+.cell{border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center;background:var(--panel);cursor:pointer}
+.cell.sel{box-shadow:0 0 0 2px var(--c)}
+.cell .no{font-family:var(--f-mono);color:var(--muted);font-size:.8rem;grid-row:span 2}
+.cgi{font-family:var(--f-mono);font-weight:700;font-size:1.02rem;word-break:break-all;min-width:0}
+.meta{grid-column:2/4;font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px;font-variant-numeric:tabular-nums}
+.meta b{color:var(--fg);font-weight:600}
+.tag{font-size:.7rem;font-weight:700;letter-spacing:.04em;padding:1px 6px;border-radius:4px;border:1px solid currentColor}
+.tag.in{color:var(--ok)}
+.cell a{color:var(--accent)}
+.empty{text-align:center;color:var(--muted);padding:22px 10px;font-size:.92rem}
+.empty ol{text-align:left;display:inline-block;margin:8px 0 0;padding-left:20px}
+details summary{cursor:pointer;color:var(--muted);font-size:.88rem}
+footer{font-size:.8rem;color:var(--muted)}
+.apis{display:flex;flex-direction:column;gap:6px}
+.api{display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg)}
+.api.off{opacity:.55}
+.api .nm{font-weight:600;min-width:0;word-break:break-all}
+.api .tk{grid-column:2;font-family:var(--f-mono);font-size:.78rem;color:var(--muted);word-break:break-all}
+.api .st{grid-column:2/4;font-size:.8rem;color:var(--muted)}
+.api .st.ok{color:var(--ok)} .api .st.err{color:var(--err)}
+.api .act{display:flex;gap:4px;grid-row:1/3;grid-column:3}
+.api .act button{padding:5px 9px;font-size:.82rem}
+.api .ord{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);grid-row:1/3}
+.addapi{display:grid;grid-template-columns:1fr 1.4fr 1.2fr auto;gap:8px;align-items:end}
+@media (max-width:620px){.addapi{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Tra CGI ngược</h1>
+      <p class="sub">Vĩ độ, kinh độ → danh sách cell (CGI) của nhà mạng quanh vị trí</p>
+    </div>
+    <span class="pill" id="dataPill">Chưa nạp dữ liệu</span>
+  </header>
+
+  <div class="layout">
+  <div class="side">
+  <section class="panel" aria-labelledby="l-pos">
+    <span class="lbl" id="l-pos">Vị trí</span>
+    <div class="row">
+      <input type="text" id="coord" value="10.957300, 106.842700" placeholder="10.9573, 106.8427 hoặc link Google Maps" autocomplete="off">
+      <button id="btnGps" type="button">Lấy GPS</button>
+    </div>
+    <p class="hint" id="coordInfo">Dán tọa độ thập phân, độ-phút-giây (10°57'26"N 106°50'33"E) hoặc link Google Maps.</p>
+    <div class="grid2">
+      <div class="field"><label class="lbl" for="radius">Bán kính tìm</label>
+        <select id="radius"><option value="300">300 m</option><option value="500">500 m</option><option value="1000" selected>1 km</option><option value="2000">2 km</option><option value="3000">3 km</option><option value="5000">5 km</option></select></div>
+      <div class="field"><label class="lbl" for="maxN">Số cell tối đa</label>
+        <select id="maxN"><option>10</option><option selected>30</option><option>50</option><option>100</option></select></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="l-net">
+    <span class="lbl" id="l-net">Nhà mạng</span>
+    <div class="chips" id="netChips"></div>
+    <span class="lbl">Công nghệ</span>
+    <div class="chips" id="radioChips"></div>
+    <label class="row hint" style="gap:6px"><input type="checkbox" id="hex"> Hiển thị LAC/CI dạng HEX</label>
+  </section>
+
+  <section class="panel" aria-labelledby="l-src">
+    <span class="lbl" id="l-src">Nguồn dữ liệu</span>
+    <div class="chips" id="srcChips">
+      <button type="button" class="chip" data-src="off" aria-pressed="true">Offline (file 452.csv.gz)</button>
+      <button type="button" class="chip" data-src="api" aria-pressed="false">API OpenCelliD</button>
+    </div>
+    <div class="src" id="srcOff">
+      <div class="row">
+        <input type="file" id="file" accept=".gz,.csv,text/csv,application/gzip" hidden>
+        <button type="button" id="btnFile">Nạp file CSV / CSV.GZ</button>
+        <button type="button" id="btnClear">Xóa dữ liệu đã lưu</button>
+      </div>
+      <progress id="prog" max="1" value="0" hidden></progress>
+      <p class="hint">Tải file <b>452.csv.gz</b> (Việt Nam) từ trang Downloads của OpenCelliD. File được lưu trong máy, lần sau mở là có ngay; nạp file mới để cập nhật.</p>
+    </div>
+    <div class="src" id="srcApi" hidden>
+      <span class="lbl">Danh sách API · thử lần lượt từ trên xuống</span>
+      <div class="apis" id="apiList"></div>
+      <div class="addapi">
+        <div class="field"><label class="lbl" for="apiName">Tên</label>
+          <input type="text" id="apiName" placeholder="Token 1" autocomplete="off"></div>
+        <div class="field"><label class="lbl" for="token">Token OpenCelliD</label>
+          <input type="password" id="token" placeholder="pk.xxxxxxxx" autocomplete="off"></div>
+        <div class="field"><label class="lbl" for="apiHost">Máy chủ</label>
+          <input type="text" id="apiHost" value="https://opencellid.org" autocomplete="off"></div>
+        <button type="button" id="btnAddApi">Thêm API</button>
+      </div>
+      <p class="hint">Khi tra, app dùng API đầu tiên đang bật; nếu API đó lỗi (sai token, hết lượt, mất mạng) hoặc không ra cell nào thì tự chuyển sang API kế tiếp. Mỗi API chỉ cho hỏi một ô ≤ 4 km², nên vùng lớn được chia nhỏ (tối đa 25 lượt mỗi API).</p>
+    </div>
+  </section>
+
+  <div class="findbar"><button class="primary" id="btnFind" type="button">Tìm CGI</button></div>
+  <p class="msg" id="msg" role="status"></p>
+  </div>
+
+  <div class="main">
+  <section class="panel" aria-labelledby="l-res">
+    <div class="res-head">
+      <h2 id="l-res">Kết quả</h2>
+      <div class="row">
+        <button type="button" id="btnCopyAll" disabled>Sao chép CGI</button>
+        <button type="button" id="btnCsv" disabled>Xuất CSV</button>
+        <button type="button" id="btnKml" disabled>Xuất KML</button>
+      </div>
+    </div>
+    <div class="res-body">
+    <canvas id="radar" width="600" height="600" aria-label="Sơ đồ vị trí cell quanh điểm tra"></canvas>
+    <div class="list" id="list">
+      <div class="empty">Chưa có kết quả.
+        <ol><li>Nạp file 452.csv.gz (hoặc nhập token API)</li><li>Nhập tọa độ, chọn nhà mạng</li><li>Bấm <b>Tìm CGI</b></li></ol></div>
+    </div>
+    </div>
+  </section>
+
+  <details>
+    <summary>Cách đọc kết quả</summary>
+    <p class="hint">CGI = MCC-MNC-LAC-CI (4G: TAC thay LAC, CI là ECI = eNB×256 + sector; 3G: CI = RNC×65536 + CID). Tọa độ cell trong OpenCelliD là tâm ước lượng từ các mẫu đo, không phải vị trí trạm BTS thật. Cell gần nhất chưa chắc là cell phục vụ; nhãn <b>TRONG VÙNG</b> nghĩa là điểm tra nằm trong bán kính phủ ước lượng của cell đó. Nên lấy vài cell đầu danh sách rồi tra xuôi lại để đối chiếu.</p>
+  </details>
+  <footer>Dữ liệu cell: OpenCelliD (CC BY-SA 4.0).</footer>
+  </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const NETS=[
+ {mnc:4,name:"Viettel",v:"--vt"},{mnc:2,name:"Vinaphone",v:"--vn"},{mnc:1,name:"MobiFone",v:"--mb"},
+ {mnc:5,name:"Vietnamobile",v:"--vnm"},{mnc:7,name:"Gmobile",v:"--gm"},{mnc:8,name:"Itel",v:"--it"},
+ {mnc:0,name:"Tất cả",v:"--accent"}];
+const NETMAP={};NETS.forEach(n=>NETMAP[n.mnc]=n);
+const RADIOS=[{k:0,t:"Tất cả"},{k:2,t:"3G",s:"UMTS"},{k:4,t:"4G",s:"LTE"},{k:5,t:"5G",s:"NR"}];
+const RCODE={GSM:1,UMTS:2,CDMA:3,LTE:4,NR:5};
+const RNAME={1:"2G",2:"3G",3:"CDMA",4:"4G",5:"5G"};
+const state={net:4,radio:0,src:"off",results:[],sel:-1,center:null,R:1000};
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+/* ---------- chips ---------- */
+function mkChips(box,items,key,onPick){
+  box.innerHTML="";
+  items.forEach(it=>{
+    const b=document.createElement("button");b.type="button";b.className="chip";
+    if(it.v)b.style.setProperty("--c","var("+it.v+")");
+    b.innerHTML=(it.v?'<span class="dot"></span>':'')+it.label+(it.sub?' <span class="mnc">'+it.sub+'</span>':'');
+    b.setAttribute("aria-pressed",String(it[key]===state[key==="mnc"?"net":"radio"]));
+    b.onclick=()=>{onPick(it);[...box.children].forEach(c=>c.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");};
+    box.appendChild(b);
+  });
+}
+const savedNet=ls.get("tracgi.net");if(savedNet!==null&&NETMAP[+savedNet])state.net=+savedNet;
+mkChips($("netChips"),NETS.map(n=>({...n,label:n.name,sub:n.mnc?"452-"+String(n.mnc).padStart(2,"0"):""})),"mnc",it=>{state.net=it.mnc;ls.set("tracgi.net",it.mnc)});
+mkChips($("radioChips"),RADIOS.map(r=>({...r,label:r.t,sub:r.s||"",k:r.k})),"k",it=>{state.radio=it.k});
+[...$("radioChips").children].forEach((c,i)=>c.setAttribute("aria-pressed",String(RADIOS[i].k===state.radio)));
+
+$("srcChips").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
+  state.src=b.dataset.src;
+  $("srcChips").querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b)));
+  $("srcOff").hidden=state.src!=="off";$("srcApi").hidden=state.src!=="api";ls.set("tracgi.src",state.src);
+});
+const savedSrc=ls.get("tracgi.src");if(savedSrc==="api")$("srcChips").querySelector('[data-src="api"]').click();
+/* ---------- danh sách API ---------- */
+let APIS=[];
+try{APIS=JSON.parse(ls.get("tracgi.apis")||"[]")||[]}catch(e){APIS=[]}
+const oldTok=ls.get("tracgi.token");
+if(!APIS.length&&oldTok)APIS=[{name:"Token 1",token:oldTok,host:"https://opencellid.org",on:true}];
+function saveApis(){ls.set("tracgi.apis",JSON.stringify(APIS.map(a=>({name:a.name,token:a.token,host:a.host,on:a.on,last:a.last,lastCls:a.lastCls}))))}
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+function mask(t){return t.length>10?t.slice(0,5)+"…"+t.slice(-4):t}
+function renderApis(){
+  const box=$("apiList");box.innerHTML="";
+  if(!APIS.length){box.innerHTML='<p class="hint">Chưa có API nào. Nhập tên và token rồi bấm <b>Thêm API</b>.</p>';return}
+  APIS.forEach((a,i)=>{
+    const d=document.createElement("div");d.className="api"+(a.on?"":" off");
+    d.innerHTML='<span class="ord">'+String(i+1).padStart(2,"0")+'</span><span class="nm">'+esc(a.name)+'</span>'+
+      '<div class="act"><button type="button" data-a="on">'+(a.on?"Tắt":"Bật")+'</button>'+
+      (i?'<button type="button" data-a="up" aria-label="Đưa lên trên">Lên</button>':'')+
+      '<button type="button" data-a="del">Xóa</button></div>'+
+      '<span class="tk">'+esc(mask(a.token))+(a.host&&a.host!=="https://opencellid.org"?" · "+esc(a.host):"")+'</span>'+
+      (a.last?'<span class="st '+(a.lastCls||"")+'">Lần tra gần nhất: '+esc(a.last)+'</span>':'');
+    d.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+      const act=b.dataset.a;
+      if(act==="on")a.on=!a.on;
+      else if(act==="up"){APIS.splice(i,1);APIS.splice(i-1,0,a)}
+      else if(act==="del"){if(b.dataset.c!=="1"){b.dataset.c="1";b.textContent="Chắc chắn?";return}APIS.splice(i,1)}
+      saveApis();renderApis();
+    });
+    box.appendChild(d);
+  });
+}
+$("btnAddApi").onclick=()=>{
+  const tok=$("token").value.trim();
+  if(!tok){say("Nhập token trước khi thêm API.","err");return}
+  if(APIS.some(a=>a.token===tok)){say("Token này đã có trong danh sách.","err");return}
+  let host=($("apiHost").value.trim()||"https://opencellid.org").replace(/\/+$/,"");
+  if(!/^https?:\/\//i.test(host))host="https://"+host;
+  APIS.push({name:$("apiName").value.trim()||("Token "+(APIS.length+1)),token:tok,host,on:true});
+  saveApis();renderApis();$("token").value="";$("apiName").value="";
+  say("Đã thêm API. Hiện có "+APIS.length+" API.","ok");
+};
+renderApis();
+$("hex").addEventListener("change",render);
+
+/* ---------- tọa độ ---------- */
+function dms(str){
+  const re=/(\d+(?:\.\d+)?)\s*°\s*(?:(\d+(?:\.\d+)?)\s*['′]\s*)?(?:(\d+(?:\.\d+)?)\s*(?:"|″|''))?\s*([NSEW])/gi;
+  const out=[];let m;
+  while((m=re.exec(str))){let v=+m[1]+(+m[2]||0)/60+(+m[3]||0)/3600;if(/[SW]/i.test(m[4]))v=-v;out.push({v,ax:/[NS]/i.test(m[4])?"lat":"lon"});}
+  if(out.length===2){const la=out.find(o=>o.ax==="lat"),lo=out.find(o=>o.ax==="lon");if(la&&lo)return[la.v,lo.v];}
+  return null;
+}
+function parseCoord(s){
+  s=(s||"").trim();if(!s)return null;
+  let m=s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||s.match(/[?&](?:q|query|ll|destination)=(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/i)||s.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  if(m)return chk(+m[1],+m[2]);
+  const d=dms(s);if(d)return chk(d[0],d[1]);
+  const nums=s.replace(/,(?=\d{3,}\b)/g,".").match(/-?\d+(?:\.\d+)?/g);
+  if(nums&&nums.length>=2){let a=+nums[0],b=+nums[1];if(Math.abs(a)>90&&Math.abs(b)<=90)[a,b]=[b,a];return chk(a,b);}
+  return null;
+  function chk(a,b){return(Math.abs(a)<=90&&Math.abs(b)<=180&&isFinite(a)&&isFinite(b))?[a,b]:null}
+}
+$("coord").addEventListener("input",()=>{const c=parseCoord($("coord").value);$("coordInfo").textContent=c?("Đọc được: vĩ độ "+c[0].toFixed(6)+", kinh độ "+c[1].toFixed(6)):"Chưa đọc được tọa độ. Ví dụ: 10.9573, 106.8427";});
+$("btnGps").onclick=()=>{
+  if(!navigator.geolocation){say("Thiết bị không hỗ trợ GPS.","err");return}
+  say("Đang lấy vị trí GPS…");
+  navigator.geolocation.getCurrentPosition(p=>{$("coord").value=p.coords.latitude.toFixed(6)+", "+p.coords.longitude.toFixed(6);$("coord").dispatchEvent(new Event("input"));say("Đã lấy GPS, sai số khoảng "+Math.round(p.coords.accuracy)+" m.","ok")},
+    e=>say("Không lấy được GPS ("+e.message+"). Hãy cấp quyền vị trí cho app hoặc nhập tay.","err"),{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+};
+
+function say(t,cls){const m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"")}
+
+/* ---------- kho dữ liệu offline ---------- */
+const DB={n:0,cap:0,a:null,name:""};
+function alloc(c){
+  const nw={lat:new Float64Array(c),lon:new Float64Array(c),cell:new Float64Array(c),area:new Uint32Array(c),net:new Uint16Array(c),radio:new Uint8Array(c),range:new Uint32Array(c),samples:new Uint32Array(c),upd:new Uint32Array(c)};
+  if(DB.a)for(const k in nw)nw[k].set(DB.a[k].subarray(0,DB.n));
+  DB.a=nw;DB.cap=c;
+}
+function resetDB(){DB.n=0;DB.a=null;alloc(1<<18)}
+function addLine(line){
+  if(!line||line.charCodeAt(0)<65)return;
+  const f=line.split(",");if(f.length<9||f[0]==="radio")return;
+  if(f[1]!=="452")return;
+  const lat=+f[7],lon=+f[6];if(!isFinite(lat)||!isFinite(lon))return;
+  if(DB.n>=DB.cap)alloc(DB.cap*2);
+  const a=DB.a,i=DB.n++;
+  a.radio[i]=RCODE[f[0]]||0;a.net[i]=+f[2];a.area[i]=+f[3];a.cell[i]=+f[4];
+  a.lon[i]=lon;a.lat[i]=lat;a.range[i]=+f[8]||0;a.samples[i]=+f[9]||0;a.upd[i]=+f[12]||0;
+}
+async function loadBlob(blob,name){
+  const head=new Uint8Array(await blob.slice(0,2).arrayBuffer());
+  const gz=head[0]===0x1f&&head[1]===0x8b;
+  let stream=blob.stream();const total=blob.size;let read=0;
+  const prog=$("prog");prog.hidden=false;prog.value=0;
+  stream=stream.pipeThrough(new TransformStream({transform(ch,c){read+=ch.byteLength;c.enqueue(ch)}}));
+  if(gz){
+    if(typeof DecompressionStream==="undefined")throw new Error("WebView quá cũ, không giải nén được .gz. Hãy giải nén ra .csv rồi nạp.");
+    stream=stream.pipeThrough(new DecompressionStream("gzip"));
+  }
+  const reader=stream.pipeThrough(new TextDecoderStream()).getReader();
+  resetDB();let buf="",tick=0;
+  for(;;){
+    const {value,done}=await reader.read();if(done)break;
+    buf+=value;let s=0,i;
+    while((i=buf.indexOf("\n",s))>=0){addLine(buf.slice(s,i).trim());s=i+1}
+    buf=buf.slice(s);
+    if(++tick%20===0){prog.value=read/total;say("Đang đọc "+name+": "+(read/1048576).toFixed(1)+" / "+(total/1048576).toFixed(1)+" MB, "+DB.n.toLocaleString("vi-VN")+" cell");await new Promise(r=>setTimeout(r))}
+  }
+  addLine(buf.trim());prog.hidden=true;DB.name=name;
+  if(!DB.n)throw new Error("File không có dòng cell MCC 452 nào. Kiểm tra lại đúng file OpenCelliD của Việt Nam.");
+  updatePill();
+}
+function updatePill(){
+  const p=$("dataPill");
+  if(DB.n){const c={};for(let i=0;i<DB.n;i++)c[DB.a.net[i]]=(c[DB.a.net[i]]||0)+1;
+    p.textContent=DB.n.toLocaleString("vi-VN")+" cell · "+DB.name;p.className="pill on";
+    p.title=Object.keys(c).map(k=>(NETMAP[k]?NETMAP[k].name:"MNC "+k)+": "+c[k].toLocaleString("vi-VN")).join("\n");}
+  else{p.textContent="Chưa nạp dữ liệu";p.className="pill"}
+}
+/* lưu file vào IndexedDB để lần sau khỏi nạp */
+function idb(){return new Promise((res,rej)=>{try{const r=indexedDB.open("tracgi",1);r.onupgradeneeded=()=>r.result.createObjectStore("f");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
+async function idbPut(v){try{const d=await idb();await new Promise((res,rej)=>{const t=d.transaction("f","readwrite");t.objectStore("f").put(v,"csv");t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){}}
+async function idbGet(){try{const d=await idb();return await new Promise(res=>{const t=d.transaction("f").objectStore("f").get("csv");t.onsuccess=()=>res(t.result);t.onerror=()=>res(null)})}catch(e){return null}}
+async function idbDel(){try{const d=await idb();d.transaction("f","readwrite").objectStore("f").delete("csv")}catch(e){}}
+
+$("btnFile").onclick=()=>$("file").click();
+$("file").onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{await loadBlob(f,f.name);await idbPut({name:f.name,blob:f,date:Date.now()});say("Đã nạp "+DB.n.toLocaleString("vi-VN")+" cell từ "+f.name+".","ok")}
+  catch(err){$("prog").hidden=true;say(err.message,"err")}
+  e.target.value="";
+};
+$("btnClear").onclick=async()=>{await idbDel();resetDB();DB.n=0;updatePill();say("Đã xóa dữ liệu lưu trong máy.")};
+(async()=>{const v=await idbGet();if(v&&v.blob){try{await loadBlob(v.blob,v.name);say("Đã mở lại dữ liệu lưu ("+v.name+", nạp ngày "+new Date(v.date).toLocaleDateString("vi-VN")+").","ok")}catch(e){$("prog").hidden=true;say(e.message,"err")}}})();
+
+/* ---------- hình học ---------- */
+const RAD=Math.PI/180;
+function dist(a1,o1,a2,o2){const dA=(a2-a1)*RAD,dO=(o2-o1)*RAD,s=Math.sin(dA/2)**2+Math.cos(a1*RAD)*Math.cos(a2*RAD)*Math.sin(dO/2)**2;return 12742000*Math.asin(Math.sqrt(s))}
+function bearing(a1,o1,a2,o2){const y=Math.sin((o2-o1)*RAD)*Math.cos(a2*RAD),x=Math.cos(a1*RAD)*Math.sin(a2*RAD)-Math.sin(a1*RAD)*Math.cos(a2*RAD)*Math.cos((o2-o1)*RAD);return(Math.atan2(y,x)/RAD+360)%360}
+const HUONG=["B","ĐB","Đ","ĐN","N","TN","T","TB"];
+function huong(b){return HUONG[Math.round(b/45)%8]}
+
+/* ---------- truy vấn ---------- */
+function queryOffline(lat,lon,R,net,radio,max){
+  if(!DB.n)throw new Error("Chưa có dữ liệu offline. Bấm “Nạp file CSV / CSV.GZ” và chọn 452.csv.gz.");
+  const a=DB.a,dLat=R/111320,dLon=R/(111320*Math.cos(lat*RAD)),out=[];
+  for(let i=0;i<DB.n;i++){
+    if(a.radio[i]===1)continue;
+    if(net&&a.net[i]!==net)continue;if(radio&&a.radio[i]!==radio)continue;
+    const la=a.lat[i],lo=a.lon[i];if(la<lat-dLat||la>lat+dLat||lo<lon-dLon||lo>lon+dLon)continue;
+    const d=dist(lat,lon,la,lo);if(d>R)continue;
+    out.push({radio:a.radio[i],net:a.net[i],area:a.area[i],cell:a.cell[i],lat:la,lon:lo,range:a.range[i],samples:a.samples[i],upd:a.upd[i],d});
+  }
+  return out.sort((x,y)=>x.d-y.d).slice(0,max);
+}
+/* Cách gọi API, tránh lỗi trình duyệt chặn (CORS):
+   - Trong APK: gọi /api/ocid, app Android tự gọi máy chủ API.
+   - Trên Netlify: gọi /ocid-api/... , file _redirects chuyển tiếp sang opencellid.org.
+   - Nơi khác (mở file trực tiếp...): gọi thẳng máy chủ API. */
+let NETLIFY_OK=null;
+async function apiFetch(host,qs){
+  if(window.AndroidSave&&/^https?:$/.test(location.protocol)){
+    return fetch("/api/ocid?host="+encodeURIComponent(host)+"&"+qs,{cache:"no-store"});
+  }
+  if(NETLIFY_OK!==false&&/^https?:$/.test(location.protocol)&&/^https:\/\/(www\.)?opencellid\.org$/i.test(host)){
+    try{
+      const rs=await fetch("/ocid-api/cell/getInArea?"+qs,{cache:"no-store"});
+      if(!/text\/html/i.test(rs.headers.get("content-type")||"")){NETLIFY_OK=true;return rs}
+    }catch(e){}
+    NETLIFY_OK=false;
+  }
+  return fetch(host+"/cell/getInArea?"+qs,{cache:"no-store"});
+}
+async function queryApiOne(api,label,lat,lon,R,net,radio,max){
+  const step=1900,n=Math.min(5,Math.ceil(2*R/step)),dLat=step/111320,dLon=step/(111320*Math.cos(lat*RAD));
+  const lat0=lat-n*dLat/2,lon0=lon-n*dLon/2,seen=new Map();let k=0;
+  const host=(api.host||"https://opencellid.org").replace(/\/+$/,"");
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
+    k++;say("Đang hỏi "+label+", ô "+k+"/"+n*n+"…");
+    const b=[lat0+r*dLat,lon0+c*dLon,lat0+(r+1)*dLat,lon0+(c+1)*dLon].map(v=>v.toFixed(6)).join(",");
+    let url=host+"/cell/getInArea?key="+encodeURIComponent(api.token)+"&BBOX="+b+"&mcc=452&limit=50&format=json";
+    if(net)url+="&mnc="+net;
+    if(radio)url+="&radio="+({2:"UMTS",4:"LTE",5:"NR"})[radio];
+    let rs,txt,j;
+    try{rs=await apiFetch(host,url.slice(url.indexOf("?")+1));txt=await rs.text()}catch(e){throw new Error("không kết nối được máy chủ")}
+    try{j=JSON.parse(txt)}catch(e){
+      if(rs.status===401||rs.status===403)throw new Error("token sai hoặc bị khóa");
+      if(rs.status===429)throw new Error("hết lượt tra");
+      throw new Error("máy chủ trả về dữ liệu lạ (HTTP "+rs.status+")");
+    }
+    if(j.error){
+      if(/not found|no cells|no data/i.test(j.error))continue;
+      if(/limit|exceed|quota/i.test(j.error))throw new Error("hết lượt tra ("+j.error+")");
+      if(/key|token|invalid|unauthor/i.test(j.error))throw new Error("token sai ("+j.error+")");
+      throw new Error(j.error);
+    }
+    (j.cells||[]).forEach(x=>{
+      const o={radio:RCODE[x.radio]||0,net:+x.mnc,area:+(x.lac??x.tac??x.area),cell:+(x.cellid??x.cell),lat:+x.lat,lon:+x.lon,range:+x.range||0,samples:+x.samples||0,upd:+x.updated||0};
+      if(o.radio===1)return;
+      o.d=dist(lat,lon,o.lat,o.lon);if(o.d<=R)seen.set(o.radio+"-"+o.net+"-"+o.area+"-"+o.cell,o);
+    });
+  }
+  return [...seen.values()].sort((x,y)=>x.d-y.d).slice(0,max);
+}
+async function queryApi(lat,lon,R,net,radio,max){
+  const list=APIS.filter(a=>a.on);
+  if(!list.length)throw new Error(APIS.length?"Tất cả API đang tắt. Bật ít nhất một API.":"Chưa có API nào. Thêm token ở mục Nguồn dữ liệu.");
+  const log=[];let anyEmpty=false;state.apiUsed="";
+  for(let i=0;i<list.length;i++){
+    const a=list[i],label="API "+(i+1)+"/"+list.length+" ("+a.name+")";
+    try{
+      const r=await queryApiOne(a,label,lat,lon,R,net,radio,max);
+      if(r.length){a.last=r.length+" cell";a.lastCls="ok";saveApis();renderApis();state.apiUsed=a.name;return r}
+      a.last="không ra cell nào";a.lastCls="";anyEmpty=true;log.push(a.name+": không ra cell");
+    }catch(e){a.last="lỗi, "+e.message;a.lastCls="err";log.push(a.name+": "+e.message)}
+    saveApis();renderApis();
+  }
+  if(anyEmpty){state.apiLog=log.join("; ");return []}
+  throw new Error("Đã thử hết "+list.length+" API, không API nào tra được. "+log.join("; ")+".");
+}
+
+$("btnFind").onclick=async()=>{
+  const c=parseCoord($("coord").value);if(!c){say("Tọa độ chưa đúng. Ví dụ: 10.9573, 106.8427","err");return}
+  const R=+$("radius").value,max=+$("maxN").value;
+  $("btnFind").disabled=true;
+  try{
+    const res=state.src==="api"?await queryApi(c[0],c[1],R,state.net,state.radio,max):queryOffline(c[0],c[1],R,state.net,state.radio,max);
+    state.results=res;state.center=c;state.R=R;state.sel=res.length?0:-1;
+    const nm=state.net?NETMAP[state.net].name:"tất cả nhà mạng";
+    const via=state.src==="api"&&state.apiUsed?" Nguồn: "+state.apiUsed+".":"";
+    const tried=state.src==="api"&&!res.length&&state.apiLog?" ("+state.apiLog+")":"";
+    say(res.length?("Tìm thấy "+res.length+" cell "+nm+" trong "+(R>=1000?R/1000+" km":R+" m")+". Cell gần nhất cách "+fmtD(res[0].d)+"."+via):("Không có cell "+nm+" nào trong bán kính này"+tried+". Tăng bán kính hoặc đổi công nghệ."),res.length?"ok":"err");
+    state.apiLog="";
+    if(matchMedia("(max-width:979px)").matches)$("l-res").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+    render();
+  }catch(e){say(e.message,"err")}
+  $("btnFind").disabled=false;
+};
+
+/* ---------- hiển thị ---------- */
+function fmtD(d){return d<1000?Math.round(d)+" m":(d/1000).toFixed(2)+" km"}
+function num(v){return $("hex").checked?Math.round(v).toString(16).toUpperCase():String(Math.round(v))}
+function cgi(o){return "452-"+String(o.net).padStart(2,"0")+"-"+num(o.area)+"-"+num(o.cell)}
+function sub(o){
+  if(o.radio===4)return "eNB "+Math.floor(o.cell/256)+" · sector "+(o.cell%256);
+  if(o.radio===2&&o.cell>65535)return "RNC "+Math.floor(o.cell/65536)+" · CID "+(o.cell%65536);
+  if(o.radio===5)return "gNB "+Math.floor(o.cell/4096)+" · cell "+(o.cell%4096);
+  return "";
+}
+function color(net){const n=NETMAP[net];return getComputedStyle(document.documentElement).getPropertyValue(n?n.v:"--it").trim()||"#888"}
+function render(){
+  const L=$("list"),r=state.results,hasR=r.length>0;
+  ["btnCopyAll","btnCsv","btnKml"].forEach(id=>$(id).disabled=!hasR);
+  if(!hasR){L.innerHTML='<div class="empty">'+(state.center?"Không có cell nào khớp điều kiện.":"Chưa có kết quả.")+'</div>';drawRadar();return}
+  L.innerHTML="";
+  r.forEach((o,i)=>{
+    const d=document.createElement("div");d.className="cell"+(i===state.sel?" sel":"");
+    d.style.setProperty("--c","var("+(NETMAP[o.net]?NETMAP[o.net].v:"--it")+")");
+    const b=bearing(state.center[0],state.center[1],o.lat,o.lon);
+    const inR=o.range&&o.d<=o.range;
+    d.innerHTML='<span class="no">'+String(i+1).padStart(2,"0")+'</span>'+
+      '<span class="cgi">'+cgi(o)+'</span>'+
+      '<button type="button" class="cp">Chép</button>'+
+      '<div class="meta"><span><b>'+(NETMAP[o.net]?NETMAP[o.net].name:"MNC "+o.net)+'</b> '+(RNAME[o.radio]||"?")+'</span>'+
+      '<span>'+(o.radio===4||o.radio===5?"TAC":"LAC")+' <b>'+num(o.area)+'</b> · CI <b>'+num(o.cell)+'</b></span>'+
+      (sub(o)?'<span>'+sub(o)+'</span>':'')+
+      '<span>Cách <b>'+fmtD(o.d)+'</b> hướng '+huong(b)+' ('+Math.round(b)+'°)</span>'+
+      (o.range?'<span>Phủ ~'+fmtD(o.range)+'</span>':'')+
+      (inR?'<span class="tag in">TRONG VÙNG</span>':'')+
+      (o.samples?'<span>'+o.samples+' mẫu</span>':'')+
+      (o.upd?'<span>Cập nhật '+new Date(o.upd*1000).toLocaleDateString("vi-VN")+'</span>':'')+
+      '<a href="https://www.google.com/maps?q='+o.lat.toFixed(6)+','+o.lon.toFixed(6)+'" target="_blank" rel="noopener">Bản đồ</a></div>';
+    d.onclick=ev=>{if(ev.target.tagName==="A")return;if(ev.target.classList.contains("cp")){copy(cgi(o),ev.target);return}state.sel=i;render()};
+    L.appendChild(d);
+  });
+  drawRadar();
+}
+function copy(t,btn){
+  const done=()=>{if(btn){const o=btn.textContent;btn.textContent="Đã chép";setTimeout(()=>btn.textContent=o,1200)}else say("Đã chép vào bộ nhớ tạm.","ok")};
+  const fb=()=>{const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");done()}catch(e){say("Không chép được, hãy chọn và chép tay.","err")}ta.remove()};
+  try{navigator.clipboard.writeText(t).then(done,fb)}catch(e){fb()}
+}
+$("btnCopyAll").onclick=e=>copy(state.results.map(cgi).join("\n"),e.target);
+
+function drawRadar(){
+  const cv=$("radar"),dpr=window.devicePixelRatio||1,w=cv.clientWidth||600;
+  cv.width=w*dpr;cv.height=w*dpr;const g=cv.getContext("2d");g.scale(dpr,dpr);
+  const cs=getComputedStyle(document.documentElement),fg=cs.getPropertyValue("--fg").trim(),mu=cs.getPropertyValue("--muted").trim(),ln=cs.getPropertyValue("--line").trim(),ac=cs.getPropertyValue("--accent").trim();
+  const cx=w/2,cy=w/2,rad=w/2-26;g.clearRect(0,0,w,w);
+  g.font="11px "+cs.getPropertyValue("--f-mono");g.textAlign="center";
+  for(let k=1;k<=3;k++){g.beginPath();g.arc(cx,cy,rad*k/3,0,7);g.strokeStyle=ln;g.lineWidth=1;g.stroke();g.fillStyle=mu;g.fillText(fmtD(state.R*k/3),cx,cy-rad*k/3-3)}
+  g.beginPath();g.moveTo(cx,cy-rad);g.lineTo(cx,cy+rad);g.moveTo(cx-rad,cy);g.lineTo(cx+rad,cy);g.strokeStyle=ln;g.setLineDash([3,4]);g.stroke();g.setLineDash([]);
+  g.fillStyle=fg;g.font="600 12px "+cs.getPropertyValue("--f-ui");g.fillText("B",cx,14);
+  if(!state.center){g.fillStyle=mu;g.font="13px "+cs.getPropertyValue("--f-ui");g.fillText("Sơ đồ cell quanh điểm tra sẽ hiện ở đây",cx,cy+rad/3+20);}
+  const sc=rad/state.R;
+  state.results.forEach((o,i)=>{
+    if(!state.center)return;
+    const x=cx+(o.lon-state.center[1])*111320*Math.cos(state.center[0]*RAD)*sc,y=cy-(o.lat-state.center[0])*111320*sc,col=color(o.net);
+    if(i===state.sel&&o.range){g.beginPath();g.arc(x,y,Math.min(o.range*sc,w),0,7);g.fillStyle=col+"22";g.fill();g.strokeStyle=col;g.stroke()}
+    g.beginPath();g.arc(x,y,i===state.sel?7:5,0,7);g.fillStyle=col;g.fill();
+    if(i===state.sel){g.lineWidth=2;g.strokeStyle=fg;g.stroke();g.lineWidth=1}
+    g.fillStyle=fg;g.font="10px "+cs.getPropertyValue("--f-mono");g.fillText(String(i+1),x,y-9);
+  });
+  if(state.center){g.beginPath();g.arc(cx,cy,6,0,7);g.fillStyle=ac;g.fill();g.beginPath();g.arc(cx,cy,11,0,7);g.strokeStyle=ac;g.lineWidth=2;g.stroke();g.lineWidth=1}
+}
+addEventListener("resize",drawRadar);
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>render());
+
+/* ---------- xuất file ---------- */
+function save(name,mime,text){
+  const b64=btoa(unescape(encodeURIComponent(text)));
+  if(window.AndroidSave&&AndroidSave.saveFile){AndroidSave.saveFile(name,mime,b64);say("Đã lưu "+name+".","ok");return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();
+  say("Đã tạo "+name+". Nếu không thấy tải xuống, hãy dùng nút Sao chép CGI.","ok");
+}
+function stamp(){const d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")+"_"+String(d.getHours()).padStart(2,"0")+String(d.getMinutes()).padStart(2,"0")}
+$("btnCsv").onclick=()=>{
+  const h="STT,CGI,Nha mang,Cong nghe,LAC/TAC,CI,Vi do,Kinh do,Khoang cach (m),Huong (do),Ban kinh phu (m),So mau\n";
+  const rows=state.results.map((o,i)=>[i+1,cgi(o),NETMAP[o.net]?NETMAP[o.net].name:o.net,RNAME[o.radio]||"",num(o.area),num(o.cell),o.lat.toFixed(6),o.lon.toFixed(6),Math.round(o.d),Math.round(bearing(state.center[0],state.center[1],o.lat,o.lon)),o.range,o.samples].join(","));
+  save("cgi_nguoc_"+stamp()+".csv","text/csv","﻿"+h+rows.join("\n"));
+};
+$("btnKml").onclick=()=>{
+  const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  const pm=state.results.map((o,i)=>'<Placemark><name>'+esc((i+1)+". "+cgi(o))+'</name><description>'+esc((NETMAP[o.net]?NETMAP[o.net].name:"")+" "+(RNAME[o.radio]||"")+", cách "+fmtD(o.d))+'</description><Point><coordinates>'+o.lon+','+o.lat+',0</coordinates></Point></Placemark>').join("");
+  const kml='<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Tra CGI nguoc '+stamp()+'</name><Placemark><name>Diem tra</name><Point><coordinates>'+state.center[1]+','+state.center[0]+',0</coordinates></Point></Placemark>'+pm+'</Document></kml>';
+  save("cgi_nguoc_"+stamp()+".kml","application/vnd.google-earth.kml+xml",kml);
+};
+
+$("coord").dispatchEvent(new Event("input"));
+drawRadar();
+})();
+</script>
