@@ -1,0 +1,46 @@
+plugins {
+    id 'com.android.application'
+}
+
+def runNo = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+def ks = file("release.jks")
+
+android {
+    namespace 'io.github.minhcell.tracgi'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "io.github.minhcell.tracgi"
+        minSdk 23
+        targetSdk 34
+        versionCode runNo
+        versionName "1.0." + runNo
+    }
+
+    signingConfigs {
+        release {
+            if (ks.exists()) {
+                storeFile ks
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (ks.exists()) signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+}
