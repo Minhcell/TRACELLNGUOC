@@ -21,8 +21,16 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Cài Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Chuẩn bị Android SDK (dùng SDK có sẵn trên máy build)
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "SDK: $SDK"
+          SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SM" ]; then SM="$(ls -d "$SDK"/cmdline-tools/*/bin/sdkmanager | tail -n 1)"; fi
+          echo "sdkmanager: $SM"
+          yes | "$SM" --licenses > /dev/null || true
+          "$SM" --install "platforms;android-34" "build-tools;34.0.0" "platform-tools" > /dev/null
+          echo "sdk.dir=$SDK" > local.properties
 
       - name: Cài Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
