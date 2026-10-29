@@ -126,6 +126,31 @@ footer{font-size:.7rem;color:var(--muted);text-align:center}
   .list{max-height:calc(100vh - 130px);overflow:auto;padding-right:4px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ---- Thanh chọn tab ---- */
+.tabs{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--btn)}
+.tabs button{flex:1;border:0;border-radius:0;background:transparent;height:36px;font-weight:600;font-size:.88rem}
+.tabs button+button{border-left:1px solid var(--line)}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-fg)}
+/* ---- Tab Tra TAC ---- */
+#tq{font:13px/1.4 var(--f-mono);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%;min-height:96px;resize:vertical}
+.tc{border:1px solid var(--line);border-left:4px solid var(--c,var(--accent));border-radius:7px;padding:9px;display:flex;flex-direction:column;gap:6px;background:var(--panel);min-width:0}
+.tc h3{margin:0;font-size:.95rem;font-family:var(--f-mono);word-break:break-all}
+.tc .st{font-size:.82rem;font-weight:600}
+.tc .st.ok{color:var(--ok)} .tc .st.warn{color:var(--warn)} .tc .st.err{color:var(--err)}
+.big{font-family:var(--f-mono);font-size:1.25rem;font-weight:700}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:.84rem;align-items:center}
+.kv>span:nth-child(odd){color:var(--muted)}
+.cand{display:grid;grid-template-columns:auto 1fr auto;gap:2px 8px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--bg)}
+.cand .why{grid-column:1/4;font-size:.74rem;color:var(--muted)}
+.cand .pct{font-family:var(--f-mono);font-size:.78rem;color:var(--muted)}
+.bar{height:4px;border-radius:2px;background:var(--line);grid-column:1/4;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.tbl{width:100%;border-collapse:collapse;font-size:.78rem;font-variant-numeric:tabular-nums}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:4px 3px;text-align:left}
+.tbl th{color:var(--muted);font-weight:600}
+.tblw{overflow-x:auto}
+.tc details summary{cursor:pointer;font-size:.8rem;color:var(--accent);font-weight:600}
+.tc a{color:var(--accent)}
 </style>
 
 <div class="wrap">
@@ -134,7 +159,12 @@ footer{font-size:.7rem;color:var(--muted);text-align:center}
     <span class="pill" id="dataPill">Chưa nạp dữ liệu</span>
   </header>
 
-  <div class="layout">
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" id="tabBtnCgi" aria-selected="true" aria-controls="tabCgi">Tra CGI ngược</button>
+    <button type="button" role="tab" id="tabBtnTac" aria-selected="false" aria-controls="tabTac">Tra LAC/TAC</button>
+  </div>
+
+  <div class="layout" id="tabCgi" role="tabpanel">
   <div class="side">
   <section class="panel" aria-label="Điều kiện tra">
     <div class="line">
@@ -202,6 +232,30 @@ footer{font-size:.7rem;color:var(--muted);text-align:center}
     </div>
   </section>
 
+  <footer>Dữ liệu cell: OpenCelliD (CC BY-SA 4.0).</footer>
+  </div>
+  </div>
+
+  <div class="layout" id="tabTac" role="tabpanel" hidden>
+  <div class="side">
+  <section class="panel" aria-label="Tra LAC/TAC từ ECGI">
+    <textarea id="tq" spellcheck="false" placeholder="452-01-253826161&#10;hoặc dán nguyên kết quả lệnh gsh get_subscriber"></textarea>
+    <div class="line">
+      <label class="fld" style="flex:1"><span class="lbl">Mạng (khi nhập số trơn)</span><select id="tnet"></select></label>
+      <div class="src-act" style="align-self:flex-end">
+        <button type="button" id="tFile" class="sm">Nạp file</button>
+        <button type="button" id="tClr" class="sm">Xóa ô</button>
+      </div>
+    </div>
+    <button class="primary" id="tFind" type="button">Tìm LAC/TAC</button>
+    <p class="msg" id="tmsg" role="status"></p>
+  </section>
+  </div>
+  <div class="main">
+  <section class="panel" aria-labelledby="l-tres">
+    <div class="res-head"><h2 id="l-tres">Kết quả</h2></div>
+    <div class="list" id="tlist"><div class="empty">Chưa có kết quả.</div></div>
+  </section>
   <footer>Dữ liệu cell: OpenCelliD (CC BY-SA 4.0).</footer>
   </div>
   </div>
@@ -329,7 +383,7 @@ $("btnGps").onclick=()=>{
     e=>say("Không lấy được GPS ("+e.message+"). Hãy cấp quyền vị trí cho app hoặc nhập tay.","err"),{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 };
 
-function say(t,cls){const m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"")}
+function say(t,cls){const m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"");if(state.tab==="tac"){const k=$("tmsg");k.textContent=t;k.className=m.className}}
 
 /* ---------- kho dữ liệu offline ---------- */
 const DB={n:0,cap:0,a:null,name:""};
@@ -588,6 +642,206 @@ $("btnKml").onclick=()=>{
   const kml='<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Tra CGI nguoc '+stamp()+'</name><Placemark><name>Diem tra</name><Point><coordinates>'+state.center[1]+','+state.center[0]+',0</coordinates></Point></Placemark>'+pm+'</Document></kml>';
   save("cgi_nguoc_"+stamp()+".kml","application/vnd.google-earth.kml+xml",kml);
 };
+
+/* =====================================================================
+   TAB TRA LAC/TAC: từ ECGI (452-MNC-ECI) tìm TAC trong dữ liệu OpenCelliD.
+   Thứ tự căn cứ: 1) đúng cell  2) cell khác cùng trạm (eNB)
+   3) các trạm thuê bao vừa đi qua (Latest eNodeB List)  4) trạm có số hiệu gần
+   5) (tùy chọn) hỏi API OpenCelliD quanh vị trí ước lượng
+   ===================================================================== */
+const TAC={extra:[],last:null};
+function showTab(t){
+  state.tab=t;
+  $("tabCgi").hidden=t!=="cgi";$("tabTac").hidden=t!=="tac";
+  $("tabBtnCgi").setAttribute("aria-selected",String(t==="cgi"));$("tabBtnTac").setAttribute("aria-selected",String(t==="tac"));
+  ls.set("tracgi.tab",t);if(t==="cgi")drawRadar();
+}
+$("tabBtnCgi").onclick=()=>showTab("cgi");$("tabBtnTac").onclick=()=>showTab("tac");
+if(ls.get("tracgi.tab")==="tac")showTab("tac");
+{const ts=$("tnet");
+  NETS.forEach(n=>{const o=document.createElement("option");o.value=n.mnc;o.textContent=n.mnc?n.name+" ("+String(n.mnc).padStart(2,"0")+")":"Tất cả";ts.appendChild(o)});
+  const sv=ls.get("tracgi.tnet");ts.value=sv!==null&&NETMAP[+sv]?sv:"1";ts.onchange=()=>ls.set("tracgi.tnet",ts.value);}
+$("tq").value=ls.get("tracgi.tq")||"";
+$("tq").addEventListener("input",()=>ls.set("tracgi.tq",$("tq").value));
+$("tFile").onclick=()=>$("file").click();
+$("tClr").onclick=()=>{$("tq").value="";ls.set("tracgi.tq","");TAC.extra=[];$("tlist").innerHTML='<div class="empty">Chưa có kết quả.</div>';tsay("")};
+function tsay(t,cls){const k=$("tmsg");k.textContent=t;k.className="msg"+(cls?" "+cls:"")}
+
+/* Đọc nội dung dán vào: ECGI, MCC-MNC-eNB-Cell, MCC-MNC-TAC-ECI, danh sách trạm, số trơn, hex */
+function tParse(txt,defNet){
+  const cells=[],enbs=[],sc=new Set(),se=new Set(),tai={};
+  const addC=(net,eci,tac)=>{const k=net+":"+eci;if(sc.has(k))return;sc.add(k);cells.push({net,eci,tac})};
+  const addE=(net,enb)=>{const k=net+":"+enb;if(se.has(k))return;se.add(k);enbs.push({net,enb})};
+  /* Ngăn cách nhận được: gạch ngang, dấu chấm, gạch dưới, gạch chéo, hai chấm, dấu cách */
+  const S="(?:\\s*[-._/:]\\s*|[ \\t]+)";
+  const re=new RegExp("\\b452"+S+"(\\d{2,3})"+S+"(?:([A-Za-z]+)"+S+")?(\\d+)(?:"+S+"(\\d+))?(?!\\d)","g");let m,any=false;
+  /* Viết liền: 452 + MNC 2 số + ECI (vd 45201253826161). IMSI 15 số không bị nhận nhầm */
+  const reJoin=/\b452(\d{2})(\d{4,9})\b/g;
+  while((m=reJoin.exec(txt))){any=true;addC(+m[1],+m[2],null)}
+  while((m=re.exec(txt))){
+    any=true;const net=+m[1],a=+m[3];
+    const ln=txt.slice(txt.lastIndexOf("\n",m.index)+1,m.index);
+    if(!m[2]&&m[4]===undefined&&/\b(TAI|TAC|Tracking|LAI|LAC)\b/i.test(ln)){if(/TAI|TAC|Tracking/i.test(ln))tai[net]=a;continue} // dòng TAI: lấy TAC từ MME
+    if(m[2])addE(net,a);
+    else if(m[4]!==undefined){const b=+m[4];if(b>255)addC(net,b,a);else addC(net,a*256+b,null)}
+    else if(a>1048575)addC(net,a,null);else addE(net,a);
+  }
+  if(!any){
+    for(const tok of txt.split(/[\s,;]+/)){
+      if(!tok)continue;
+      const pr=tok.match(/^(\d+)[-._/:](\d+)$/); // eNB-cell, eNB.cell
+      if(pr){const a=+pr[1],b=+pr[2];if(b<=255&&a<=1048575)addC(defNet,a*256+b,null);else if(b>255)addC(defNet,b,a);continue}
+      if(/^(0x)?[0-9a-f]+$/i.test(tok)&&/[a-fx]/i.test(tok))addC(defNet,parseInt(tok.replace(/^0x/i,""),16),null);
+      else if(/^\d+$/.test(tok)){const v=+tok;if(v<=1048575)addE(defNet,v);else addC(defNet,v,null)}
+    }
+  }
+  cells.forEach(c=>{if(c.tac==null&&tai[c.net]!=null){c.tac=tai[c.net];c.fromTai=true}});
+  return {cells,enbs};
+}
+/* Gom các cell LTE theo trạm cho những trạm cần xét (một lượt quét dữ liệu) */
+function tCollect(want){
+  const map=new Map(),seen=new Set();
+  const put=(net,cell,area,lat,lon,samples,upd,range,src)=>{
+    const enb=Math.floor(cell/256);
+    if(!want(net,enb))return;
+    const k=net+"-"+cell;if(seen.has(k))return;seen.add(k);
+    const key=net*2097152+enb;let g=map.get(key);
+    if(!g){g={net,enb,cells:[]};map.set(key,g)}
+    g.cells.push({net,cell,area,lat,lon,samples,upd,range,src});
+  };
+  if(DB.n){const a=DB.a;for(let i=0;i<DB.n;i++){if(a.radio[i]!==4)continue;put(a.net[i],a.cell[i],a.area[i],a.lat[i],a.lon[i],a.samples[i],a.upd[i],a.range[i],"file")}}
+  TAC.extra.forEach(o=>{if(o.radio===4)put(o.net,o.cell,o.area,o.lat,o.lon,o.samples,o.upd,o.range,"api")});
+  map.forEach(g=>{
+    let la=0,lo=0;const tc=new Map();
+    g.cells.forEach(c=>{la+=c.lat;lo+=c.lon;tc.set(c.area,(tc.get(c.area)||0)+1)});
+    g.lat=la/g.cells.length;g.lon=lo/g.cells.length;g.tacs=[...tc].sort((x,y)=>y[1]-x[1]);
+  });
+  return map;
+}
+const NEAR=64;
+function tAnalyze(t,enbList,map){
+  const nets=t.net?[t.net]:NETS.filter(n=>n.mnc).map(n=>n.mnc);
+  const enb=Math.floor(t.eci/256),r={t,enb,cid:t.eci%256,exact:[],same:null,via:[],near:[],score:new Map(),pos:null,posWhy:""};
+  const add=(tac,w,why)=>{let s=r.score.get(tac);if(!s){s={tac,w:0,why:[]};r.score.set(tac,s)}s.w+=w;s.why.push(why)};
+  for(const net of nets){
+    const g=map.get(net*2097152+enb);
+    if(g){
+      g.cells.filter(c=>c.cell===t.eci).forEach(c=>r.exact.push(c));
+      const others=g.cells.filter(c=>c.cell!==t.eci);
+      if(others.length){r.same=g;const tc=new Map();others.forEach(c=>tc.set(c.area,(tc.get(c.area)||0)+1));
+        tc.forEach((n,tac)=>add(tac,40*n,n+" cell khác cùng trạm "+enb))}
+      if(!r.pos){r.pos=[g.lat,g.lon];r.posWhy="tâm các cell của trạm "+enb}
+    }
+    enbList.filter(e=>e.net===net&&e.enb!==enb).forEach(e=>{
+      const h=map.get(net*2097152+e.enb);
+      r.via.push({enb:e.enb,net,g:h||null});
+      if(h)h.tacs.forEach(([tac,n])=>add(tac,8*n/h.cells.length,"trạm đã đi qua "+e.enb));
+    });
+    map.forEach(h=>{
+      if(h.net!==net||h.enb===enb)return;const d=Math.abs(h.enb-enb);if(d>NEAR)return;
+      r.near.push({...h,d});
+    });
+  }
+  r.near.sort((a,b)=>a.d-b.d);
+  r.near.slice(0,12).forEach(h=>h.tacs.forEach(([tac,n])=>add(tac,4/(1+h.d/6)*n/h.cells.length,"trạm số hiệu gần "+h.enb+" (lệch "+h.d+")")));
+  if(!r.pos){
+    const v=r.via.filter(x=>x.g);
+    if(v.length){const la=v.map(x=>x.g.lat).sort((a,b)=>a-b),lo=v.map(x=>x.g.lon).sort((a,b)=>a-b),m=Math.floor(v.length/2);
+      r.pos=[la[m],lo[m]];r.posWhy="giữa "+v.length+" trạm thuê bao vừa đi qua (độ chính xác thấp)"}
+    else if(r.near.length){r.pos=[r.near[0].lat,r.near[0].lon];r.posWhy="trạm số hiệu gần nhất "+r.near[0].enb+" (độ chính xác thấp)"}
+  }
+  const tot=[...r.score.values()].reduce((s,x)=>s+x.w,0);
+  r.cands=[...r.score.values()].sort((a,b)=>b.w-a.w).map(x=>({...x,pct:tot?Math.round(100*x.w/tot):0}));
+  return r;
+}
+const mapsA=(la,lo,txt)=>'<a href="https://www.google.com/maps?q='+la.toFixed(6)+','+lo.toFixed(6)+'" target="_blank" rel="noopener">'+(txt||la.toFixed(5)+", "+lo.toFixed(5))+'</a>';
+const n2=n=>String(n).padStart(2,"0");
+function tCgi(net,tac,eci){return "452-"+n2(net)+"-"+tac+"-"+eci}
+function tCardHtml(r,idx){
+  const t=r.t,net=t.net||(r.exact[0]&&r.exact[0].net)||(r.same&&r.same.net)||0;
+  const col=NETMAP[net]?NETMAP[net].v:"--accent";
+  let h='<div class="tc" style="--c:var('+col+')"><h3>'+(net?"452-"+n2(net)+"-":"")+t.eci+'</h3>'+
+    '<div class="kv"><span>Trạm eNB</span><span><b>'+r.enb+'</b> · cell '+r.cid+' · HEX '+t.eci.toString(16).toUpperCase()+'</span>'+
+    (net?'<span>Nhà mạng</span><span>'+(NETMAP[net]?NETMAP[net].name:"MNC "+net)+'</span>':'')+'</div>';
+  if(t.fromTai)h+='<div class="st ok">✔ TAC lấy từ dòng TAI của MME (chính xác)</div><div class="kv"><span>TAC</span><span class="big">'+t.tac+'</span>'+
+    '<span>CGI nhập app</span><span class="line"><span class="cgi">'+tCgi(net,t.tac,t.eci)+'</span><button type="button" class="sm cp" data-cp="'+tCgi(net,t.tac,t.eci)+'">Chép</button></span></div>';
+  if(r.exact.length){
+    r.exact.forEach(c=>{
+      h+='<div class="st ok">✔ Có đúng cell này trong dữ liệu'+(c.src==="api"?" (API)":"")+'</div>'+
+        '<div class="kv"><span>TAC</span><span class="big">'+c.area+'</span>'+
+        '<span>CGI nhập app</span><span class="line"><span class="cgi">'+tCgi(c.net,c.area,c.cell)+'</span><button type="button" class="sm cp" data-cp="'+tCgi(c.net,c.area,c.cell)+'">Chép</button></span>'+
+        '<span>Tọa độ cell</span><span>'+mapsA(c.lat,c.lon)+'</span>'+
+        '<span>Phủ / mẫu</span><span>~'+fmtD(c.range||0)+' · '+c.samples+' mẫu'+(c.upd?' · cập nhật '+new Date(c.upd*1000).toLocaleDateString("vi-VN"):'')+'</span></div>';
+      if(t.tac!=null&&t.tac!==c.area)h+='<div class="st warn">TAC đã nhập ('+t.tac+') khác TAC trong dữ liệu ('+c.area+').</div>';
+    });
+  }else if(r.cands.length){
+    const top=r.cands[0],sure=r.same&&top.pct>=60;
+    h+='<div class="st '+(sure?"ok":"warn")+'">'+(sure?"≈ Không có đúng cell, suy từ cell cùng trạm (tin cậy cao)":"≈ Không có cell này, TAC được ước lượng từ trạm lân cận — cần đối chiếu")+'</div>';
+    r.cands.slice(0,4).forEach((c,i)=>{
+      const cg=tCgi(net||1,c.tac,t.eci);
+      h+='<div class="cand"><span class="big" style="font-size:'+(i?"1rem":"1.25rem")+'">'+c.tac+'</span>'+
+        '<span class="cgi" style="font-size:.82rem">'+cg+'</span><button type="button" class="sm cp" data-cp="'+cg+'">Chép</button>'+
+        '<span class="bar"><i style="width:'+c.pct+'%"></i></span>'+
+        '<span class="why">'+c.pct+'% · '+esc([...new Set(c.why)].slice(0,3).join("; "))+(c.why.length>3?"; …":"")+'</span></div>';
+    });
+  }else{
+    h+='<div class="st err">✘ Dữ liệu không có trạm '+r.enb+', không có trạm đã đi qua hay trạm số hiệu gần nào để suy TAC.</div>'+
+      '<p class="hint">Cách chắc chắn: chạy lại trên MME không lọc (bỏ egrep) và đọc dòng TAI. Hoặc dán thêm cả dòng "Latest eNodeB List" để có căn cứ suy.</p>';
+  }
+  if(r.pos)h+='<div class="kv"><span>Vị trí ước lượng</span><span>'+mapsA(r.pos[0],r.pos[1])+' <span class="hint">('+esc(r.posWhy)+')</span></span></div>';
+  if(r.pos&&!r.exact.length&&APIS.some(a=>a.on))h+='<button type="button" class="sm" data-api="'+idx+'">Hỏi thêm API quanh vị trí này (2 km)</button>';
+  if(r.same){
+    h+='<details><summary>Cell cùng trạm '+r.enb+' ('+r.same.cells.length+')</summary><div class="tblw"><table class="tbl"><tr><th>Cell</th><th>ECI</th><th>TAC</th><th>Tọa độ</th><th>Mẫu</th></tr>'+
+      r.same.cells.slice().sort((a,b)=>a.cell-b.cell).map(c=>'<tr><td>'+(c.cell%256)+'</td><td>'+c.cell+'</td><td>'+c.area+'</td><td>'+mapsA(c.lat,c.lon)+'</td><td>'+c.samples+'</td></tr>').join("")+'</table></div></details>';
+  }
+  if(r.via.length){
+    h+='<details'+(r.exact.length||r.same?"":" open")+'><summary>Trạm thuê bao vừa đi qua ('+r.via.length+')</summary><div class="tblw"><table class="tbl"><tr><th>#</th><th>eNB</th><th>TAC</th><th>Vị trí</th></tr>'+
+      r.via.map((v,i)=>'<tr><td>'+(i+1)+'</td><td>'+v.enb+'</td><td>'+(v.g?v.g.tacs.map(x=>x[0]).join(", "):"–")+'</td><td>'+(v.g?mapsA(v.g.lat,v.g.lon):"chưa có dữ liệu")+'</td></tr>').join("")+'</table></div></details>';
+  }
+  if(r.near.length){
+    h+='<details><summary>Trạm số hiệu gần '+r.enb+' (±'+NEAR+', '+r.near.length+' trạm)</summary><div class="tblw"><table class="tbl"><tr><th>eNB</th><th>Lệch</th><th>TAC</th><th>Vị trí</th></tr>'+
+      r.near.slice(0,20).map(v=>'<tr><td>'+v.enb+'</td><td>'+v.d+'</td><td>'+v.tacs.map(x=>x[0]).join(", ")+'</td><td>'+mapsA(v.lat,v.lon)+'</td></tr>').join("")+'</table></div></details>';
+  }
+  return h+'</div>';
+}
+function tViaOnly(enbs,map){
+  return '<div class="tc"><h3>Các trạm (eNodeB)</h3><div class="tblw"><table class="tbl"><tr><th>#</th><th>Mạng</th><th>eNB</th><th>TAC</th><th>Vị trí</th></tr>'+
+    enbs.map((e,i)=>{const nets=e.net?[e.net]:NETS.filter(n=>n.mnc).map(n=>n.mnc);let g=null;for(const n of nets){g=map.get(n*2097152+e.enb);if(g)break}
+      return '<tr><td>'+(i+1)+'</td><td>'+(g?n2(g.net):e.net?n2(e.net):"")+'</td><td>'+e.enb+'</td><td>'+(g?g.tacs.map(x=>x[0]).join(", "):"–")+'</td><td>'+(g?mapsA(g.lat,g.lon):"chưa có dữ liệu")+'</td></tr>'}).join("")+
+    '</table></div></div>';
+}
+function tRun(){
+  if(!DB.n&&!TAC.extra.length){tsay("Chưa có dữ liệu. Bấm “Nạp file” và chọn 452.csv.gz (dùng chung với tab Tra CGI ngược).","err");return}
+  const defNet=+$("tnet").value;
+  const {cells,enbs}=tParse($("tq").value,defNet);
+  if(!cells.length&&!enbs.length){tsay("Không thấy ECGI / CGI / số cell nào. Ví dụ: 452-01-253826161","err");return}
+  const want=new Set();
+  cells.forEach(c=>{const e=Math.floor(c.eci/256);for(let d=-NEAR;d<=NEAR;d++)want.add(e+d)});
+  enbs.forEach(e=>want.add(e.enb));
+  const map=tCollect((net,enb)=>want.has(enb));
+  const res=cells.map(c=>tAnalyze(c,enbs,map));
+  TAC.last={res};
+  let h=res.map(tCardHtml).join("");
+  if(!cells.length&&enbs.length)h+=tViaOnly(enbs,map);
+  $("tlist").innerHTML=h||'<div class="empty">Không có kết quả.</div>';
+  const ok=res.filter(r=>r.exact.length||r.t.fromTai).length,est=res.filter(r=>!r.exact.length&&!r.t.fromTai&&r.cands.length).length;
+  tsay(cells.length?(ok?"Tìm thấy đúng TAC cho "+ok+" cell. ":"")+(est?"Ước lượng TAC cho "+est+" cell. ":"")+(cells.length-ok-est?"Không suy được "+(cells.length-ok-est)+" cell.":""):"Đã tra "+enbs.length+" trạm.",ok?"ok":est?"":"err");
+  if(matchMedia("(max-width:959px)").matches)$("l-tres").scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("tFind").onclick=tRun;
+$("tlist").addEventListener("click",async ev=>{
+  const b=ev.target.closest("button");if(!b)return;
+  if(b.dataset.cp){copy(b.dataset.cp,b);return}
+  if(b.dataset.api!==undefined){
+    const r=TAC.last&&TAC.last.res[+b.dataset.api];if(!r||!r.pos)return;
+    b.disabled=true;
+    try{
+      const got=await queryApi(r.pos[0],r.pos[1],2000,r.t.net||0,4,2000);
+      const k=new Set(TAC.extra.map(o=>o.net+"-"+o.cell));got.forEach(o=>{if(!k.has(o.net+"-"+o.cell))TAC.extra.push(o)});
+      tRun();tsay("API trả về "+got.length+" cell 4G quanh vị trí ước lượng"+(state.apiUsed?" ("+state.apiUsed+")":"")+", đã tính lại.",got.length?"ok":"");
+    }catch(e){tsay(e.message,"err");b.disabled=false}
+  }
+});
 
 $("coord").dispatchEvent(new Event("input"));
 drawRadar();
